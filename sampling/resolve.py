@@ -36,11 +36,7 @@ def main():
     address_lines = [line.strip() for line in lines]
 
     for line in address_lines:
-        parts = line.strip().split()
-        if len(parts) < 3:
-            continue
-
-        address = int(parts[0], 16)
+        address = int(line, 16)
         for mapping in mappings.values():
             if mapping['start'] <= address <= mapping['end']:
                 mapping['addresses'].add(address)

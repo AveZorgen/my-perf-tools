@@ -7,7 +7,7 @@ make
 ## Usage
 ### Run profiler
 ```bash
-./sampling <exe>
+./build/sampling <exe>
 ```
 ### Resolve addresses
 ```bash

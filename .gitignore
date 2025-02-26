@@ -1,3 +1,4 @@
 .vscode/
 sampling/*.txt
 sampling/*.map
+*/build

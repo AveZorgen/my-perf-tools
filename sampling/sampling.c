@@ -91,7 +91,6 @@ int main(int argc, char* argv[]) {
     }
 
     struct user_regs_struct regs;
-    struct timeval tv;
 
     ptrace(PTRACE_SEIZE, traced_process, NULL, NULL);
     while (1) {
@@ -103,10 +102,6 @@ int main(int argc, char* argv[]) {
         }
         ptrace(PTRACE_GETREGS, traced_process, NULL, &regs);
         ptrace(PTRACE_CONT, traced_process, NULL, NULL);
-
-        gettimeofday(&tv, NULL);
-
-        fprintf(fout, "0x%llx %ld %ld\n", regs.rip, tv.tv_sec, tv.tv_usec);
 
         usleep(1000);  // 1ms
     }
