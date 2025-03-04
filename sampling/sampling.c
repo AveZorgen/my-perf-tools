@@ -103,6 +103,10 @@ int main(int argc, char* argv[]) {
         ptrace(PTRACE_GETREGS, traced_process, NULL, &regs);
         ptrace(PTRACE_CONT, traced_process, NULL, NULL);
 
+        // TODO(me): also collect callstack
+
+        fprintf(fout, "0x%llx\n", regs.rip);
+
         usleep(1000);  // 1ms
     }
 

@@ -53,6 +53,7 @@ def main():
         addresses = map(lambda address: hex(address - start + offset), address_orig)
 
         try:
+            # TODO(me): implement addr2line logic
             result = subprocess.check_output(['addr2line', '-e', pathname, '-f', '-C', *addresses], stderr=subprocess.STDOUT)
             data = result.decode('utf-8').strip().splitlines()
             for i in range(len(data) // 2):
@@ -60,7 +61,18 @@ def main():
         except subprocess.CalledProcessError:
             continue
 
-    print(text)
+    from collections import Counter
+
+    lines = text.splitlines()
+    n = len(lines)
+
+    ds = sorted(
+        dict(Counter(lines)).items(),
+        key=lambda kv: kv[1],
+        reverse=True
+    )
+    for k, v in ds:
+        print(k, f"{v/n:.3f}")
 
 
 if __name__ == "__main__":
