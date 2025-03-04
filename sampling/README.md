@@ -9,7 +9,7 @@ make
 ```bash
 ./build/sampling <exe>
 ```
-### Resolve addresses
+### Generate report
 ```bash
-python3 resolve.py
+python3 report.py
 ```

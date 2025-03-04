@@ -1,6 +1,8 @@
+# Copyright 2025 Kulikov Artem
+
 from bcc import BPF, utils
 
-code="""
+code = """
 #include <uapi/linux/ptrace.h>
 
 struct perf_delta {
@@ -102,12 +104,13 @@ void trace_end(struct pt_regs* ctx) {
 }
 """
 
-b = BPF(text=code, cflags=['-DMAX_CPUS=%s' % str(len(utils.get_online_cpus()))])
+b = BPF(text=code, cflags=["-DMAX_CPUS=%s" % str(len(utils.get_online_cpus()))])
 
 name = "ls"
 sym = "main"
 
 import sys
+
 argv = sys.argv
 argc = len(argv) - 1
 if argc:
@@ -119,24 +122,45 @@ if argc:
 b.attach_uprobe(name=name, sym=sym, fn_name="trace_start")
 b.attach_uretprobe(name=name, sym=sym, fn_name="trace_end")
 
+
 def print_data(cpu, data, size):
     e = b["output"].event(data)
-    print("%-16d %-16d %-4.2f %-16s %-4d %-16d %-16d %-16.6f %-16.6f" % (
-        e.clk_delta, e.inst_delta, 1.0* e.inst_delta/e.clk_delta, 
-        str(round(e.time_delta * 1e-3, 2)) + ' us', cpu,
-        e.chrf_delta, e.chms_delta, 1.0* e.chms_delta/e.chrf_delta,1.0* e.chms_delta/e.clk_delta,))
+    print(
+        "%-16d %-16d %-4.2f %-16s %-4d %-16d %-16d %-16.6f %-16.6f"
+        % (
+            e.clk_delta,
+            e.inst_delta,
+            1.0 * e.inst_delta / e.clk_delta,
+            str(round(e.time_delta * 1e-3, 2)) + " us",
+            cpu,
+            e.chrf_delta,
+            e.chms_delta,
+            1.0 * e.chms_delta / e.chrf_delta,
+            1.0 * e.chms_delta / e.clk_delta,
+        )
+    )
 
 
 print("Counters Data")
-print("%-16s %-16s %-4s %-16s %-4s %-16s %-16s %-16s %-16s" % (
-    'CLOCK', 'INSTRUCTION', 'IPC', 
-    'TIME', 'CPU', 
-    'CACHE REF', 'CACHE MISS', 'CACHE MISS/all', 'CACHE MISS/sec'))
+print(
+    "%-16s %-16s %-4s %-16s %-4s %-16s %-16s %-16s %-16s"
+    % (
+        "CLOCK",
+        "INSTRUCTION",
+        "IPC",
+        "TIME",
+        "CPU",
+        "CACHE REF",
+        "CACHE MISS",
+        "CACHE MISS/all",
+        "CACHE MISS/sec",
+    )
+)
 
 b["output"].open_perf_buffer(print_data)
 
 PERF_TYPE_HARDWARE = 0
-PERF_COUNT_HW_CPU_CYCLES = 0 # not PERF_COUNT_HW_REF_CPU_CYCLES
+PERF_COUNT_HW_CPU_CYCLES = 0  # not PERF_COUNT_HW_REF_CPU_CYCLES
 PERF_COUNT_HW_INSTRUCTIONS = 1
 PERF_COUNT_HW_CACHE_REFERENCES = 2
 PERF_COUNT_HW_CACHE_MISSES = 3
