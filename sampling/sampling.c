@@ -12,6 +12,10 @@
 
 #define MAX_LINE 3 * 128
 
+#ifdef CALLSTACK
+#define MAX_STACK 5
+#endif
+
 typedef struct {
     pid_t pid;
     FILE* fout;
@@ -90,8 +94,6 @@ int main(int argc, char* argv[]) {
         exit(EXIT_FAILURE);
     }
 
-    struct user_regs_struct regs;
-
     ptrace(PTRACE_SEIZE, traced_process, NULL, NULL);
     while (1) {
         ptrace(PTRACE_INTERRUPT, traced_process, NULL, NULL);
@@ -100,12 +102,37 @@ int main(int argc, char* argv[]) {
         if (WIFEXITED(status) || WIFSIGNALED(status)) {
             break;
         }
+
+        struct user_regs_struct regs;
         ptrace(PTRACE_GETREGS, traced_process, NULL, &regs);
+
+        long long ip = regs.rip;
+
+#ifdef CALLSTACK
+        long long bp = regs.rbp;
+        long ret = ptrace(PTRACE_PEEKDATA, traced_process, bp + sizeof(long), NULL);
+
+        static long stack[MAX_STACK];
+        int cur_depth = 0;
+        while (cur_depth < MAX_STACK && bp != -1 && ret != -1) {
+            stack[cur_depth++] = ret;
+
+            bp = ptrace(PTRACE_PEEKDATA, traced_process, bp, NULL);
+            ret = ptrace(PTRACE_PEEKDATA, traced_process, bp + sizeof(long), NULL);
+        }
+
         ptrace(PTRACE_CONT, traced_process, NULL, NULL);
 
-        // TODO(me): also collect callstack
+        fprintf(fout, "0x%llx", ip);
+        for (int i = 0; i < cur_depth; i++) {
+            fprintf(fout, " 0x%lx", stack[i]);
+        }
+        fprintf(fout, "\n");
+#else
+        ptrace(PTRACE_CONT, traced_process, NULL, NULL);
 
-        fprintf(fout, "0x%llx\n", regs.rip);
+        fprintf(fout, "0x%llx\n", ip);
+#endif
 
         usleep(1000);  // 1ms
     }

@@ -38,11 +38,12 @@ def main():
     address_lines = [line.strip() for line in lines]
 
     for line in address_lines:
-        address = int(line, 16)
-        for mapping in mappings.values():
-            if mapping["start"] <= address <= mapping["end"]:
-                mapping["addresses"].add(address)
-                break
+        for addr in line.split():
+            address = int(addr, 16)
+            for mapping in mappings.values():
+                if mapping["start"] <= address <= mapping["end"]:
+                    mapping["addresses"].add(address)
+                    break
 
     text = "\n".join(address_lines)
 
@@ -73,7 +74,7 @@ def main():
 
     ds = sorted(dict(Counter(lines)).items(), key=lambda kv: kv[1], reverse=True)
     for k, v in ds:
-        print(k, f"{v/n:.3f}")
+        print(k.replace(' ', ' <- '), f"{v/n:.3f}")
 
 
 if __name__ == "__main__":
