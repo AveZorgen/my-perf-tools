@@ -1,6 +1,7 @@
 # Copyright 2025 Kulikov Artem
 
 import subprocess
+import pathlib
 
 
 def parse_maps(maps_lines):
@@ -62,8 +63,10 @@ def main():
                 stderr=subprocess.STDOUT,
             )
             data = result.decode("utf-8").strip().splitlines()
+            binary = pathlib.Path(pathname).name
             for i in range(len(data) // 2):
-                text = text.replace(hex(address_orig[i]), data[i * 2])
+                repl = f"{data[i * 2]}({binary})"
+                text = text.replace(hex(address_orig[i]), repl)
         except subprocess.CalledProcessError:
             continue
 
