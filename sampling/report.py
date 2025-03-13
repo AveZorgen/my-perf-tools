@@ -74,7 +74,7 @@ def main():
 
     ds = sorted(dict(Counter(lines)).items(), key=lambda kv: kv[1], reverse=True)
     for k, v in ds:
-        print(k.replace(' ', ' <- '), f"{v/n:.3f}")
+        print(f"{v/n:5.2f}", k.replace(" ", " <- "))
 
 
 if __name__ == "__main__":
