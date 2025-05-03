@@ -106,21 +106,23 @@ void trace_end(struct pt_regs* ctx) {
 
 b = BPF(text=code, cflags=["-DMAX_CPUS=%s" % str(len(utils.get_online_cpus()))])
 
-name = "ls"
-sym = "main"
+name = "./a.out"
+sym = "*"
 
 import sys
 
-argv = sys.argv
-argc = len(argv) - 1
+argv = sys.argv[1:]
+argc = len(argv)
+print(argc, argv)
+
 if argc:
     name = argv[0]
     argc -= 1
 if argc:
     sym = argv[1]
 
-b.attach_uprobe(name=name, sym=sym, fn_name="trace_start")
-b.attach_uretprobe(name=name, sym=sym, fn_name="trace_end")
+b.attach_uprobe(name=name, sym_re=sym, fn_name="trace_start")
+b.attach_uretprobe(name=name, sym_re=sym, fn_name="trace_end")
 
 
 def print_data(cpu, data, size):
