@@ -157,10 +157,6 @@ b.attach_uretprobe(name=name, sym_re=sym, fn_name="trace_end")
 # i5-3340 99.2 0.02976
 
 
-b.attach_uprobe(name=name, sym_re=sym, fn_name="trace_start")
-b.attach_uretprobe(name=name, sym_re=sym, fn_name="trace_end")
-
-
 
 def print_data(cpu, data, size):
     e = b["output"].event(data)
