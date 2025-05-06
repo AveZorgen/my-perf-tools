@@ -175,14 +175,21 @@ def print_data(cpu, data, size):
         )
     )
 
-    P_peak = 99.2 * (2 ** 30) # FLOP/s
-    M = 1600 * 1e6 * 64 / 8 # BYTE/s
+    # P_peak = n_core * n_super * n_fma * f_flops
+    P_peak = 1 * 4 * 1 * (3100 * 1e6) # FLOP/s
+    # 3100 ops - not flops ?
+    # n_super=4 - from noploop
+
+    # M = n_chan * 8b * f_btps
+    M = 2 * (64 / 8) * (800 * 1e6) # BYTE/s
+
 
     BYTES = e.chms_delta * 64
     SECS = e.time_delta * 1e-9
     I = e.flops_delta / BYTES
     P = e.flops_delta / SECS
 
+    print(f'{e.chms_delta=}, {e.time_delta=}, {e.flops_delta=}')
     print(f'{I=}, {(P_peak/M)=}')
 
 
@@ -236,10 +243,34 @@ b["chms"].open_perf_event(PerfType.HW_CACHE,
 
 
 # Intel Volume 3B documentation
-FP_COMP_OPS_EXE_SSE_PACKED_SINGLE = 0x4010
-FP_COMP_OPS_EXE_SSE_SCALAR_SINGLE = 0x2010
+FP_COMP_OPS_EXE_SSE_PACKED_SINGLE = 0x10 | 0x40 << 8
+FP_COMP_OPS_EXE_SSE_SCALAR_SINGLE = 0x10 | 0x20 << 8
 b["flops"].open_perf_event(PerfType.RAW, FP_COMP_OPS_EXE_SSE_SCALAR_SINGLE)
 
+
+# interesting FP events by Intel family
+
+# Sandy Bridge:
+# FP_COMP_OPS_EXE.* (Number of SSE* or AVX-128 FP Computational * uops issued this cycle)
+
+# Ivy Bridge:
+# FP_COMP_OPS_EXE.*
+# SIMD_FP_256.* (Counts 256-bit packed * floating-point instructions)
+
+# Haswell: ?
+
+# Broadwell:
+# Skylake:
+# Ice Lake:
+# Tiger Lake:
+# FP_ARITH_INST_RETIRED.* (Number of SSE/AVX computational *)
+
+# Alder Lake:
+# Raptor Lake:
+# FP_ARITH_DISPATCHED.* (by port)
+# FP_ARITH_INST_RETIRED.*
+
+# ...
 
 while True:
     try:
