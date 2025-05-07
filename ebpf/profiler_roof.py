@@ -8,7 +8,8 @@ code = """
 struct perf_delta {
     u64 clk_delta;
     u64 inst_delta;
-    u64 time_delta;
+    u64 time_start;
+    u64 time_end;
     u64 chrf_delta;
     u64 chms_delta;
     u64 flops_delta;
@@ -105,7 +106,8 @@ void trace_end(struct pt_regs* ctx) {
     
     kptr = data.lookup(&time);
     if (!kptr) return;
-    perf_data.time_delta = time_end - *kptr;
+    perf_data.time_start = *kptr;
+    perf_data.time_end = time_end;
 
     kptr = data.lookup(&chrf_k);
     if (!kptr) return;
@@ -160,20 +162,6 @@ b.attach_uretprobe(name=name, sym_re=sym, fn_name="trace_end")
 
 def print_data(cpu, data, size):
     e = b["output"].event(data)
-    print(
-        "%-16d %-16d %-4.2f %-16s %-4d %-16d %-16d %-16.6f %-16.6f"
-        % (
-            e.clk_delta,
-            e.inst_delta,
-            1.0 * e.inst_delta / e.clk_delta,
-            str(round(e.time_delta * 1e-3, 2)) + " us",
-            cpu,
-            e.chrf_delta,
-            e.chms_delta,
-            1.0 * e.chms_delta / e.chrf_delta,
-            1.0 * e.chms_delta / e.clk_delta,
-        )
-    )
 
     # P_peak = n_core * n_super * n_fma * f_flops
     P_peak = 1 * 4 * 1 * (3100 * 1e6) # FLOP/s
@@ -183,29 +171,38 @@ def print_data(cpu, data, size):
     # M = n_chan * 8b * f_btps
     M = 2 * (64 / 8) * (800 * 1e6) # BYTE/s
 
-
-    BYTES = e.chms_delta * 64
-    SECS = e.time_delta * 1e-9
+    time_delta = e.time_end - e.time_start
+    BYTES = e.chms_delta * 64 # check another way
+    SECS = time_delta * 1e-9
     I = e.flops_delta / BYTES
     P = e.flops_delta / SECS
 
-    print(f'{e.chms_delta=}, {e.time_delta=}, {e.flops_delta=}')
-    print(f'{I=}, {(P_peak/M)=}')
+    print(
+        "%-4d %-16d %-16d %-16d %-16d %-16s %-16d"
+        % (
+            cpu,
+            e.inst_delta,
+            e.flops_delta,
+            e.time_start,
+            e.time_end,
+            f'{time_delta} ns',
+            e.chms_delta,
+        )
+    )
+    # print(f'{I=:.3f}, {(P_peak/M)=:.3f}')
 
 
 print("Counters Data")
 print(
-    "%-16s %-16s %-4s %-16s %-4s %-16s %-16s %-16s %-16s"
+    "%-4s %-16s %-16s %-16s %-16s %-16s %-16s"
     % (
-        "CLOCK",
-        "INSTRUCTION",
-        "IPC",
-        "TIME",
         "CPU",
-        "CACHE REF",
+        "INSTRUCTION",
+        "FLOP",
+        "TIME START",
+        "TIME END",
+        "TIME DELTA",
         "CACHE MISS",
-        "CACHE MISS/all",
-        "CACHE MISS/sec",
     )
 )
 
