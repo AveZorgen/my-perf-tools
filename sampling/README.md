@@ -15,6 +15,11 @@ make
 ./build/sampling_g <exe>
 ```
 ### Generate report
+- Normal report
 ```bash
 python3 report.py
+```
+- Callstack (flamegraph) report
+```bash
+python3 report.py | flamegraph.pl > flamegraph.svg
 ```

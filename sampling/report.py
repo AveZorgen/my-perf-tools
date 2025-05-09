@@ -70,14 +70,34 @@ def main():
         except subprocess.CalledProcessError:
             continue
 
-    from collections import Counter
-
     lines = text.splitlines()
     n = len(lines)
 
-    ds = sorted(dict(Counter(lines)).items(), key=lambda kv: kv[1], reverse=True)
-    for k, v in ds:
-        print(f"{v/n:5.2f}", k.replace(" ", " <- "))
+    not_call_stack = True
+    for line in lines:
+        if ' ' in line:
+            not_call_stack = False
+            break
+
+    if not_call_stack:
+        # regular output
+        from collections import Counter
+
+        ds = sorted(dict(Counter(lines)).items(), key=lambda kv: kv[1], reverse=True)
+        for k, v in ds:
+            print(f"{v/n:5.2f}", k)
+    else:
+        # flamegraph format
+        ds = {}
+        for line in lines:
+            if line in ds:
+                ds[line] += 1
+            else:
+                ds[line] = 1  # call order
+        ds = ds.items()
+
+        for k, v in ds:
+            print(";".join(reversed(k.split(" "))), v)
 
 
 if __name__ == "__main__":
