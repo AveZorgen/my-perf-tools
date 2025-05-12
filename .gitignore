@@ -1,4 +1,7 @@
 .vscode/
 sampling/*.txt
 sampling/*.map
+sampling/*.svg
+tracer/*.iprof
+tracer/*.json
 */build

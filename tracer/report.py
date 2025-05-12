@@ -188,6 +188,7 @@ def main():
     binary_path = lines.pop(0).strip()
     if not binary_path:
         binary_path = input("Please input path to instrmented binary").strip()
+
     symbol_map, main_addr = resolve_addresses_to_symbols(binary_path)
 
     prof_tp = lines.pop(0).strip()
@@ -196,7 +197,7 @@ def main():
     elif prof_tp == "GRAPH":
         graph_mem = parse_data_file_GRAPH(lines, symbol_map, main_addr)
     else:
-        print(prof_tp)
+        print(f"Unsupported profile type: {prof_tp}")
         return
 
     # graph_mem = {
