@@ -125,7 +125,7 @@ void trace_end(struct pt_regs* ctx) {
 }
 """
 
-b = BPF(text=code, cflags=["-DMAX_CPUS=%s" % str(len(utils.get_online_cpus()))])
+b = BPF(text=code, cflags=["-DMAX_CPUS=%s" % str(len(utils.get_online_cpus())), "-Wno-macro-redefined"])
 
 name = "./a.out"
 sym = "*"

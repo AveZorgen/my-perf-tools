@@ -163,7 +163,7 @@ names = {
 
 code = code.format_map(get_fmt_dict(names.keys()))
 
-b = BPF(text=code, cflags=["-DMAX_CPUS=%s" % str(len(utils.get_online_cpus()))])
+b = BPF(text=code, cflags=["-DMAX_CPUS=%s" % str(len(utils.get_online_cpus())), "-Wno-macro-redefined"])
 b.attach_uprobe(name=name, sym_re=sym, fn_name="trace_start")
 b.attach_uretprobe(name=name, sym_re=sym, fn_name="trace_end")
 
