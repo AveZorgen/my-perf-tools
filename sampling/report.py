@@ -27,7 +27,7 @@ def parse_maps(maps_lines):
 
 
 def main():
-    with open("mpt.map", "r") as file:
+    with open("mpt.map", "r") as file: # use ldd?
         lines = file.readlines()
 
     maps_lines = [line.strip() for line in lines if "r-xp" in line and "/" in line]

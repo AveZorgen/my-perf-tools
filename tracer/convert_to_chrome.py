@@ -95,7 +95,7 @@ def main():
     with open("trace.json", "w") as f:
         json.dump(trace_data, f, indent=2)
 
-    print("Trace file generated: trace.json")
+    print("Trace file generated: trace.json") # display abs path to .json
 
 
 if __name__ == "__main__":

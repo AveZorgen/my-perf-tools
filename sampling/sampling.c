@@ -13,7 +13,7 @@
 #define MAX_LINE 3 * 128
 
 #ifdef CALLSTACK
-#define MAX_STACK 5
+#define MAX_STACK 64
 #endif
 
 typedef struct {

@@ -5,3 +5,4 @@ sampling/*.svg
 tracer/*.iprof
 tracer/*.json
 */build
+*/venv

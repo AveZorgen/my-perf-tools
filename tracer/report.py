@@ -117,29 +117,54 @@ def ryg_grad_bezier_cubic(t: float):
     comm = 3 * t * (1 - t)
     return (t**3 + comm, (1 - t) ** 3 + comm, 0)
 
+def frac_func_to_int(func, *args, **kwargs):
+    res = func(*args, **kwargs)
+    return tuple(map(lambda x: min(max(int(x * 255), 0), 255), res))
 
-TARGET = "self"  # "self", "full"
 
-
-def paint_graph(graph_mem, strategy, output_file="call_graph"):
+def paint_graph(graph_mem, strats, output_file="call_graph"):
     graph = pydot.Dot(graph_type="digraph")
     graph.set_node_defaults(color="lightgray", style="filled")
 
     for name, data in graph_mem.items():
-        self_time = data[TARGET]
-        badness = strategy(self_time)
-        rgb = ryg_grad_bezier_cubic(badness)
-        irgb = tuple(map(lambda x: int(x * 255), rgb))
-        label = f"{name}\n{TARGET}: {self_time}ns {badness:.3f}\nCount: {data['n']}\nAvg: {self_time//data['n']}ns"
+        irgbs = []
+        for target, (reg, avg) in strats.items():
+            x_reg = data[target]
+            x_avg = x_reg // data["n"]
+            badness_reg = reg(x_reg)
+            badness_avg = avg(x_avg)
+            irgbs.extend([
+                frac_func_to_int(ryg_grad_bezier_cubic, badness_reg),
+                frac_func_to_int(ryg_grad_bezier_cubic, badness_avg)
+            ])
 
-        graph.add_node(pydot.Node(name, label=label, color="#%02x%02x%02x" % irgb))
+        target = "self"
+        x_reg = data["self"]
+        x_avg = x_reg //  data["n"]
+        label = f"{name}\n{target}: {x_reg}ns" + \
+                    (f"\nCount: {data['n']}\nAvg: {x_avg}ns" if data['n'] != 1 else "")
+
+        graph.add_node(pydot.Node(name, label=label,
+            style="wedged",
+            fillcolor=":".join(
+            [f"#{r:02x}{g:02x}{b:02x}" for (r, g, b) in irgbs]
+        )))
+
+
+    legend_node = pydot.Node("legend",
+    label=r'''<<TABLE BORDER="0" CELLBORDER="1" CELLSPACING="0">
+            <TR><TD WIDTH="30" HEIGHT="30">self avg</TD><TD WIDTH="30" HEIGHT="30">self real</TD></TR>
+            <TR><TD WIDTH="30" HEIGHT="30">full real</TD><TD WIDTH="30" HEIGHT="30">full avg</TD></TR>
+           </TABLE>>''',
+    shape="none")
+    graph.add_node(legend_node)
 
     for name, data in graph_mem.items():
         child_t = sum(child_data["t"] for child_data in data["children"].values())
         n = len(data["children"])
         for child_name, child_data in data["children"].items():
             weight = child_data["t"] / child_t
-            title = f'{child_data["n"]}' + f" ({weight:.2f})" if n != 1 else ""
+            title = f'{child_data["n"]}' + (f" ({weight:.2f})" if n != 1 else "")
 
             graph.add_edge(pydot.Edge(name, child_name, taillabel=title))
 
@@ -210,48 +235,41 @@ def main():
     #     "bar": {"self": 2200, "n": 2, "children": {"foo": {"n": 6, "t": 700}}},
     # }
 
-    for data in graph_mem.values():
+    for node_name, data in graph_mem.items():
         data["full"] = data["self"] + sum(
             child_data["t"] for child_data in data["children"].values()
         )
 
-    # avg time
-    for sym in graph_mem.values():
-        sym[TARGET] //= sym["n"]
+        # handling recursion
+        for child_name, child_data in data["children"].items():
+            if child_name == node_name:
+                data["self"] += child_data["t"]
+                break
 
-    times = [sym[TARGET] for sym in graph_mem.values()]
 
-    # print(times)
-
-    max_x = max(times)
-    s1 = lambda val: strat1(val, max_x)
-
-    # max_x = sum(time for time in times)
-    # s2 = lambda val: strat2(val, max_x) # NOTE: bad
-
-    n_bins = int(np.pow(len(times), 1 / 3)) * 3
-
-    print(n_bins)
-    hist, edges = np.histogram(times, bins=n_bins)
-    cdf = hist.cumsum().astype("float64")
-    cdf /= cdf[-1]
-    # cdf_str = (cdf - cdf.min()) / (cdf.max() - cdf.min())
-
-    s3 = lambda val: strat3(val, edges, cdf)
-    # s4 = lambda val: strat3(val, edges, cdf_str) # NOTE: bad
+    n_bins = int(np.pow(len(graph_mem), 1 / 3)) * 3
 
     k = n_bins
     qs = [i / k for i in range(1, k)]
     vals = [i / (k - 1) for i in range(0, k)]
-    qcuts = np.quantile(times, qs)
 
-    s5 = lambda val: strat5(val, k, qcuts, vals)
+    qcuts = np.quantile([sym["self"] for sym in graph_mem.values()], qs)
+    s51 = lambda val: strat5(val, k, qcuts, vals)
 
-    sname = "s5"
-    paint_graph(graph_mem, eval(sname), f"{sname}_{TARGET}_avg")
-    # s1                прямолинейно
-    # s5-b2 (b1, b4)    неплохо
-    # s3-b5             неплохо, когда дольше
+    qcuts = np.quantile([sym["self"] // sym["n"] for sym in graph_mem.values()], qs)
+    s52 = lambda val: strat5(val, k, qcuts, vals)
+
+    qcuts = np.quantile([sym["full"] for sym in graph_mem.values()], qs)
+    s53 = lambda val: strat5(val, k, qcuts, vals)
+
+    qcuts = np.quantile([sym["full"] // sym["n"] for sym in graph_mem.values()], qs)
+    s54 = lambda val: strat5(val, k, qcuts, vals)
+
+    import time
+    paint_graph(graph_mem, {
+        "self": (s51, s52),
+        "full": (s53, s54)
+    }, f"graph_{time.time()}")
 
 
 if __name__ == "__main__":
