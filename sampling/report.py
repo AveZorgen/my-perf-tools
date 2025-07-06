@@ -90,6 +90,10 @@ def main():
         # flamegraph format
         ds = {}
         for line in lines:
+            stack = line.split(' ')
+            if stack[1].startswith('0x'): # rsp ret addr wrong
+                stack.pop(1)
+                line = ' '.join(stack)
             if line in ds:
                 ds[line] += 1
             else:

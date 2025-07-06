@@ -109,6 +109,8 @@ int main(int argc, char* argv[]) {
         long long ip = regs.rip;
 
 #ifdef CALLSTACK
+        long ret_rsp = ptrace(PTRACE_PEEKDATA, traced_process, regs.rsp, NULL);
+
         long long bp = regs.rbp;
         long ret = ptrace(PTRACE_PEEKDATA, traced_process, bp + sizeof(long), NULL);
 
@@ -123,7 +125,7 @@ int main(int argc, char* argv[]) {
 
         ptrace(PTRACE_CONT, traced_process, NULL, NULL);
 
-        fprintf(fout, "0x%llx", ip);
+        fprintf(fout, "0x%llx 0x%lx", ip, ret_rsp);
         for (int i = 0; i < cur_depth; i++) {
             fprintf(fout, " 0x%lx", stack[i]);
         }
